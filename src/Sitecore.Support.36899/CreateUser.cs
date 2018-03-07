@@ -16,6 +16,7 @@ namespace Sitecore.Support.Commerce.Engine.Connect.Pipelines.Customers
   using Sitecore.Commerce;
   using Sitecore.Commerce.Pipelines;
   using Sitecore.Commerce.Entities.Customers;
+  using System;
 
   /// <summary>
   /// Adds Commerce Engine Customer 
@@ -35,29 +36,36 @@ namespace Sitecore.Support.Commerce.Engine.Connect.Pipelines.Customers
       Assert.IsNotNull(request.Email, "request.Email");
       Assert.IsNotNull(request.Password, "request.Password");
 
-      Container container = this.GetContainer(request.Shop.Name, string.Empty, "", "", args.Request.CurrencyCode, null);
-      var view = this.GetEntityView(container, string.Empty, string.Empty, "Details", "AddCustomer", result);
-      if (!result.Success)
+      if (result.CommerceUser!=null)
       {
         return;
       }
-
-      view.Properties.FirstOrDefault(p => p.Name.Equals("Email")).Value = request.Email;
-      view.Properties.FirstOrDefault(p => p.Name.Equals("Password")).Value = request.Password;
-      view.Properties.FirstOrDefault(p => p.Name.Equals("AccountStatus")).Value = "ActiveAccount";
-
-      var command = this.DoAction(container, view, result);
-
-      result.CommerceUser = new CommerceUser()
+      else
       {
-        Email = request.Email,
-        UserName = request.UserName,
-        ExternalId = command.Models.OfType<CustomerAdded>().FirstOrDefault().CustomerId
-      };
+        Container container = this.GetContainer(request.Shop.Name, string.Empty, "", "", args.Request.CurrencyCode, null);
+        var view = this.GetEntityView(container, string.Empty, string.Empty, "Details", "AddCustomer", result);
+        if (!result.Success)
+        {
+          return;
+        }
 
-      request.Properties.Add(new PropertyItem { Key = "UserId", Value = result.CommerceUser.ExternalId });
+        view.Properties.FirstOrDefault(p => p.Name.Equals("Email")).Value = request.Email;
+        view.Properties.FirstOrDefault(p => p.Name.Equals("Password")).Value = request.Password;
+        view.Properties.FirstOrDefault(p => p.Name.Equals("AccountStatus")).Value = "ActiveAccount";
 
-      base.Process(args);
+        var command = this.DoAction(container, view, result);
+
+        result.CommerceUser = new CommerceUser()
+        {
+          Email = request.Email,
+          UserName = request.UserName,
+          ExternalId = command.Models.OfType<CustomerAdded>().FirstOrDefault().CustomerId
+        };
+
+        request.Properties.Add(new PropertyItem { Key = "UserId", Value = result.CommerceUser.ExternalId });
+        base.Process(args);
+      }
     }
+
   }
 }
