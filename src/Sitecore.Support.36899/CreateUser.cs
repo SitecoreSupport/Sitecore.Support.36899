@@ -17,12 +17,21 @@ namespace Sitecore.Support.Commerce.Engine.Connect.Pipelines.Customers
   using Sitecore.Commerce.Pipelines;
   using Sitecore.Commerce.Entities.Customers;
   using System;
+  using Sitecore.Commerce.Entities;
 
   /// <summary>
   /// Adds Commerce Engine Customer 
   /// </summary>   
   public class CreateUser : PipelineProcessor
   {
+
+    public CreateUser(IEntityFactory entityFactory)
+    {
+      this.entityFactory = entityFactory;
+    }
+
+    // Fields
+    private readonly IEntityFactory entityFactory;
     /// <summary>
     /// Processes the specified arguments.
     /// </summary>
@@ -55,13 +64,13 @@ namespace Sitecore.Support.Commerce.Engine.Connect.Pipelines.Customers
 
         var command = this.DoAction(container, view, result);
 
-        result.CommerceUser = new CommerceUser()
-        {
-          Email = request.Email,
-          UserName = request.UserName,
-          ExternalId = command.Models.OfType<CustomerAdded>().FirstOrDefault().CustomerId
-        };
+        var commerceUser = this.entityFactory.Create<CommerceUser>("CommerceUser");
+        commerceUser.Email = request.Email;
+        commerceUser.UserName = request.UserName;
+        commerceUser.ExternalId = command.Models.OfType<CustomerAdded>().FirstOrDefault().CustomerId;
 
+
+        result.CommerceUser = commerceUser;
         request.Properties.Add(new PropertyItem { Key = "UserId", Value = result.CommerceUser.ExternalId });
         base.Process(args);
       }
