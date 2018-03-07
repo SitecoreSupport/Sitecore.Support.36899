@@ -63,16 +63,18 @@ namespace Sitecore.Support.Commerce.Engine.Connect.Pipelines.Customers
         view.Properties.FirstOrDefault(p => p.Name.Equals("AccountStatus")).Value = "ActiveAccount";
 
         var command = this.DoAction(container, view, result);
+        if (command.Models != null)
+        {
+          var commerceUser = this.entityFactory.Create<CommerceUser>("CommerceUser");
+          commerceUser.Email = request.Email;
+          commerceUser.UserName = request.UserName;
+          commerceUser.ExternalId = command.Models.OfType<CustomerAdded>().FirstOrDefault().CustomerId;
 
-        var commerceUser = this.entityFactory.Create<CommerceUser>("CommerceUser");
-        commerceUser.Email = request.Email;
-        commerceUser.UserName = request.UserName;
-        commerceUser.ExternalId = command.Models.OfType<CustomerAdded>().FirstOrDefault().CustomerId;
 
-
-        result.CommerceUser = commerceUser;
-        request.Properties.Add(new PropertyItem { Key = "UserId", Value = result.CommerceUser.ExternalId });
-        base.Process(args);
+          result.CommerceUser = commerceUser;
+          request.Properties.Add(new PropertyItem { Key = "UserId", Value = result.CommerceUser.ExternalId });
+          base.Process(args);
+        }
       }
     }
 
