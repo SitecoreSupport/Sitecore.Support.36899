@@ -49,8 +49,7 @@ namespace Sitecore.Support.Commerce.Engine.Connect.Pipelines.Customers
       {
         return;
       }
-      else
-      {
+
         Container container = this.GetContainer(request.Shop.Name, string.Empty, "", "", args.Request.CurrencyCode, null);
         var view = this.GetEntityView(container, string.Empty, string.Empty, "Details", "AddCustomer", result);
         if (!result.Success)
@@ -63,8 +62,18 @@ namespace Sitecore.Support.Commerce.Engine.Connect.Pipelines.Customers
         view.Properties.FirstOrDefault(p => p.Name.Equals("AccountStatus")).Value = "ActiveAccount";
 
         var command = this.DoAction(container, view, result);
-        if (command.Models != null)
+        if (!result.Success)
         {
+            if (result.SystemMessages != null)
+                {
+                    foreach (var msg in result.SystemMessages)
+                        {
+                            Log.Warn("CreateUser processor: "+msg.Message, this);
+                        }
+                }
+            return;
+        }
+
           var commerceUser = this.entityFactory.Create<CommerceUser>("CommerceUser");
           commerceUser.Email = request.Email;
           commerceUser.UserName = request.UserName;
@@ -74,9 +83,9 @@ namespace Sitecore.Support.Commerce.Engine.Connect.Pipelines.Customers
           result.CommerceUser = commerceUser;
           request.Properties.Add(new PropertyItem { Key = "UserId", Value = result.CommerceUser.ExternalId });
           base.Process(args);
-        }
+        
       }
     }
 
   }
-}
+
